@@ -1,5 +1,5 @@
 /* eslint-disable react/jsx-no-constructed-context-values */
-import React, { useCallback, useEffect, useMemo, useRef, useReducer } from 'react';
+import React, { useCallback, useEffect, useMemo, useReducer, useRef } from 'react';
 import isEmpty from 'lodash/isEmpty';
 import cloneDeep from 'lodash/cloneDeep';
 import get from 'lodash/get';
@@ -10,13 +10,13 @@ import { useIntl } from 'react-intl';
 import { Prompt, Redirect } from 'react-router-dom';
 import { Main } from '@strapi/design-system/Main';
 import {
-    LoadingIndicatorPage,
     ContentManagerEditViewDataManagerContext,
+    getAPIInnerErrors,
+    getYupInnerErrors,
+    LoadingIndicatorPage,
     useNotification,
     useOverlayBlocker,
     useTracking,
-    getYupInnerErrors,
-    getAPIInnerErrors,
 } from '@strapi/helper-plugin';
 
 import { getTrad, removeKeyInObject } from '../../utils';
@@ -68,6 +68,10 @@ const EditViewDataManagerProvider = ({
 
     const hasDraftAndPublish = useMemo(() => {
         return get(currentContentTypeLayout, ['options', 'draftAndPublish'], false);
+    }, [currentContentTypeLayout]);
+
+    const hasVersions = useMemo(() => {
+        return get(currentContentTypeLayout, ['pluginOptions', 'versions', 'versioned'], false);
     }, [currentContentTypeLayout]);
 
     const shouldNotRunValidations = useMemo(() => {
@@ -553,7 +557,7 @@ const EditViewDataManagerProvider = ({
 
     // Redirect the user to the previous page if he is not allowed to read/update a document
     if (shouldRedirectToHomepageWhenEditingEntry) {
-        return <Redirect to={from} />;
+        return <Redirect to={from}/>;
     }
 
     if (!modifiedData) {
@@ -601,12 +605,12 @@ const EditViewDataManagerProvider = ({
         >
             {isLoadingForData || (!isCreatingEntry && !initialData.id) ? (
                 <Main aria-busy="true">
-                    <LoadingIndicatorPage />
+                    <LoadingIndicatorPage/>
                 </Main>
             ) : (
                 <>
                     <Prompt
-                        when={!isEqual(modifiedData, initialData)}
+                        when={!hasVersions && !isEqual(modifiedData, initialData)}
                         message={formatMessage({ id: 'global.prompt.unsaved' })}
                     />
                     <form noValidate onSubmit={handleSubmit}>
@@ -621,7 +625,8 @@ const EditViewDataManagerProvider = ({
 EditViewDataManagerProvider.defaultProps = {
     from: '/',
     initialValues: null,
-    redirectToPreviousPage() {},
+    redirectToPreviousPage() {
+    },
 };
 
 EditViewDataManagerProvider.propTypes = {
